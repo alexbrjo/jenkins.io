@@ -1,0 +1,65 @@
+---
+layout: post
+title: "Build Gradle projects with Pipeline"
+tags:
+- pipeline
+- gradle
+- gradlew
+- groovy
+- java
+author: alexbrjo
+---
+
+Maven vs Ant: the debate for thevbest Java build tool undoubtably has a third contender. Gradle is an open source build tool written in Java and Groovy that has core support for multilanguage projects. Gradle builds preform link:https://gradle.org/gradle-vs-maven-performance/[significantly faster] than Maven while maintaining the convention over configuration convenience of Maven and the flexibility of Ant. Using the link:https://plugins.jenkins.io/gradle[Gradle plugin] developers have been able to build Gradle FreeStyleProjects, and now some of these features are now implemented for Pipeline.
+
+== Why has full Gradle pipeline support not been added?
+
+The Gradle builder works by launching Gradle and observing the system process. This system process of course is not serializable, so if Jenkins restarted or the agent running the build was disconnected it could not resume the pipeline. since that Gradle system process either finished running or is no longer obserable by Jenkins. So having a devoted `gradle` step implies that it can be deserialized on Jenkins startup and the build can be continued from that point.
+
+== How to use `withGradle {}`
+
+The `withGradle {}` step supplies a console annotator and automatic configuration for gradle installations. If you already have Gradle installations configured in your Jenkins global configuration this pulls directly from those installations. 
+
+image:/images/post-images/2017-08-11/gradle-pipeline/01.png[role=center, title="The Snippetizer view for Gradle builds"]
+
+You can specifiy a Gradle and/or JDK installation in your pipeline script and the environment `PATH` will contain the `JAVA_HOME` and `GRADLE_HOME` for the build. If your Gradle tool installation is setup to download distibutions automatically you can run the build on any agent.
+
+[source,groovy]
+----
+pipeline {
+    agent any
+    stages {
+        stage ('build') {
+            withGradle(gradleName: 'gradle-2.10') {
+               	sh 'gradle build'
+            }
+        }
+    }
+}
+----
+
+Yay! Pretty console output and anchors to Gradle tasks.
+
+image:/images/post-images/2017-08-11/gradle-pipeline/02.png[role=center, title="The annotated console output"]
+
+== Use with Gradle Wrapper
+
+If you are using the Gradle Wrapper (`./gradlew`) there is no need to specifiy a Gradle installation since the installation is local to the project. But you can still use the console annotator by wrapping your shell step in the `withGradle {}` block.
+
+[source,groovy]
+----
+pipeline {
+    agent any
+    stages {
+        stage ('build') {
+            withGradle {
+               	sh './gradlew build'
+            }
+        }
+    }
+}
+----
+
+== Thanks for reading!
+
+Hopefully these features will help you convert your FreeStyleProject's to Pipelines! 
