@@ -10,15 +10,18 @@ tags:
 author: alexbrjo
 ---
 
-Maven vs Ant: the debate for thevbest Java build tool undoubtably has a third contender. Gradle is an open source build tool written in Java and Groovy that has core support for multilanguage projects. Gradle builds preform link:https://gradle.org/gradle-vs-maven-performance/[significantly faster] than Maven while maintaining the convention over configuration convenience of Maven and the flexibility of Ant. Using the link:https://plugins.jenkins.io/gradle[Gradle plugin] developers have been able to build Gradle FreeStyleProjects, and now some of these features are now implemented for Pipeline.
+Gradle is an open source build tool written in Java and Groovy that has core support for multilanguage projects. Gradle builds preform link:https://gradle.org/gradle-vs-maven-performance/[significantly faster] than Maven while maintaining the convention over configuration convenience of Maven and the flexibility of Ant. Using the link:https://plugins.jenkins.io/gradle[Gradle plugin] developers have been able to build Gradle FreeStyleProjects, and now some of these features are implemented for Pipeline.
 
 == Why has full Gradle pipeline support not been added?
 
-The Gradle builder works by launching Gradle and observing the system process. This system process of course is not serializable, so if Jenkins restarted or the agent running the build was disconnected it could not resume the pipeline. since that Gradle system process either finished running or is no longer obserable by Jenkins. So having a devoted `gradle` step implies that it can be deserialized on Jenkins startup and the build can be continued from that point.
+The Gradle builder in FreeStyle projects works by launching Gradle and observing the system process via stdout, stderr and the exit code. This prevents `gradle` from becoming a fully qualified Pipeline step because a Pipeline step requires some way to restart the build from that point.
+
+This system process of course is not serializable, so if Jenkins restarted or the agent running the build was disconnected it could not resume the pipeline. since that Gradle system process either finished running or is no longer obserable by Jenkins. So having a devoted `gradle` step implies that it can be deserialized on Jenkins startup and the build can be continued from that point.
+- Serialization is required for builds to restart at any point
 
 == How to use `withGradle {}`
 
-The `withGradle {}` step supplies a console annotator and automatic configuration for gradle installations. If you already have Gradle installations configured in your Jenkins global configuration this pulls directly from those installations. 
+The `withGradle {}` step supplies a console annotator and automatic configuration for gradle installations. If you already have Gradle installations configured in your Jenkins global configuration this pulls directly from those installations.
 
 image:/images/post-images/2017-08-11/gradle-pipeline/01.png[role=center, title="The Snippetizer view for Gradle builds"]
 
@@ -31,7 +34,7 @@ pipeline {
     stages {
         stage ('build') {
             withGradle(gradleName: 'gradle-2.10') {
-               	sh 'gradle build'
+                sh 'gradle build'
             }
         }
     }
