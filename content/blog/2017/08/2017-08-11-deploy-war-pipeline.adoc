@@ -1,0 +1,71 @@
+---
+layout: post
+title: "Deploy to Java Application servers from Pipeline"
+tags:
+- pipeline
+- tomcat
+- glassfish
+- jboss
+author: alexbrjo
+---
+
+== this is an unrevised early draft
+
+The Deploy to container plugin deploys your `.war` or `.ear` to a Java Application server (JBoss, GlassFish or Tomcat). It is now fully compatible with Pipeline! This can simiply the deployment part of your Jenkins pipelines. Just select the containers that you'd like to deploy to and add their credentials and location of archive to deploy. If you do not specifiy a `contextPath` it will default to root.
+
+Required 
+    - credentials
+    - location of Java Application server
+    - location of `.war` or `.ear` file
+Optional
+    - context path of deployed webapp
+    - deploy on build failure flag
+
+image:/images/post-images/2017-08-11/deploy-container-pipline/01.png[role=center, title="The Snippetizer view for deploy plugin"]
+
+[source,groovy]
+----
+pipeline {
+    agent {
+    	label: 'tomcat8 && glassfish3'
+    }
+    stages {
+        stage ('deploy') {
+            def tc8 =    tomcat8(credentialsId: 'tomcat-manager',  url:  'http://localhost:8080')
+            def gf3 = glassfish3(credentialsId: 'glassfish-admin', hostName: 'http://localhost', adminPort: 8081)
+            deploy adapters: [ tc8, gf3 ], contextPath: '/app', war: 'target/app-1.0-SNAPSHOT.war'
+        }
+    }
+}
+----
+
+== Hello Deploy Pipeline!
+
+Let's set up a continuous delivery pipeline using Tomcat 8 and Deploy to container plugin.
+
+1. First download and start Tomcat 8. By default it will listen at port http://localhost:8080 
+
+[source,bash]
+---
+catalina start
+catalina.sh start
+---
+
+2. Next we can.
+
+JenkinsFile
+[source,groovy]
+----
+pipeline {
+    agent any
+    stages {
+    	stage ('download') {
+    		sh 'curl -L http://mirrors.jenkins.io/war/latest/jenkins.war > jenkins.war'
+    	}
+        stage ('deploy') {
+            deploy adapters: [ tomcat8(credentialsId: 'tomcat-manager',  url:  'http://localhost:8080') ], 
+            contextPath: '/app', war: 'jenkins.war'
+        }
+    }
+}
+----
